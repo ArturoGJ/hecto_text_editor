@@ -3,10 +3,11 @@ use std::io::{stdout, self};
 use termion::{event::Key, raw::IntoRawMode, input::TermRead};
 
 pub struct Editor {
+    should_quit: bool,
 }
 
 impl Editor {
-    pub fn run(&self) {
+    pub fn run(&mut self) {
         // Here we are using termion  to provide stdout.
         // We are assigning the result of "into_raw_mode" to a variable named _stdout
         // into_raw_mode modifies the terminal and returns a value which, once it is removed,
@@ -14,30 +15,35 @@ impl Editor {
         // by binding it to _stdout.
         let _stdout = stdout().into_raw_mode().unwrap();
         
-        for key in io::stdin().keys() {
-            match key {
-                Ok(key) => match key {
-                    Key::Char(c) => {
-                        // From wikipedia: In computing, a control character or non-printing character is 
-                        // a code point (a number) in a character set, that does not represent a written 
-                        // symbol. They are used as in-band signaling to cause effects other than the 
-                        // addition of a symbol to the text.
-                        if c.is_control() {
-                            println!("{:?}\r", c as u8);
-                        } else {
-                            println!("{:?} ({})\r", c as u8, c);
-                        }
-                    },
-                    Key::Ctrl('q') => break,
-                    _ => println!("{:?}\r", key),
-                },
-                Err(err) => die(err),
+        loop {
+            if let Err(error) = self.process_keypress() {
+                die(error);
+            }
+            if self.should_quit {
+                break;
             }
         }
     }
 
     pub fn default() -> Self {
-        Self {}
+        Self { should_quit: false }
+    }
+
+    fn process_keypress(&mut self) -> Result<(), std::io::Error> {
+        let pressed_key = read_key()?; // If there is an error return it, else keep going.
+        match pressed_key {
+            Key::Ctrl('q') => self.should_quit = true,
+            _ => (),
+        }
+        Ok(())
+    }
+}
+
+fn read_key() -> Result<Key, std::io::Error> {
+    loop {
+        if let Some(key) = io::stdin().lock().keys().next() {
+            return key;
+        }
     }
 }
 

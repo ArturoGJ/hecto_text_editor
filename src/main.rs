@@ -7,6 +7,5 @@ mod editor;
     Found here: https://www.philippflenker.com/hecto/
 */
 fn main() {
-    let editor = Editor::default();
-    editor.run();
+    Editor::default().run();
 }
